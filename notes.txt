@@ -1,0 +1,8 @@
+## Generate Types from supabase
+npx supabase login
+npx supabase projects list
+npx supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/supabase.ts
+
+## the auth component has no redirect for plain email and password sign in
+solution is to use a auth context to redirect on state change (on sign in)
+solution is to use functions instead then redirect with next router
