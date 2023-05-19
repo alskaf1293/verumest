@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import { GetServerSidePropsContext } from 'next'
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
+import { createServerSupabaseClient, User } from '@supabase/auth-helpers-nextjs'
 
 type Message = {
     text: string;
     user: string;
   };
 
-const Chat = () => {
+  export default function Chat({ user, initialPosts }: { user: User, initialPosts: any[] }) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
 
-    const sendMessage = async (event) => {
+    const sendMessage = async (event : FormEvent) => {
       event.preventDefault();
     
       const userMessage = { text: input, user: 'You' };
@@ -68,4 +70,35 @@ const Chat = () => {
   );
 };
 
-export default Chat;
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
+  // Create authenticated Supabase Client
+  const supabase = createServerSupabaseClient(ctx)
+  // Check if we have a session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session)
+    return {
+      redirect: {
+        destination: '/auth/signin',
+        permanent: false,
+      },
+    }
+
+  // Fetch user's posts
+  const { data: posts, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('user_id', session.user.id)
+
+  if (error) console.log("Error fetching posts:", error)
+
+  return {
+    props: {
+      initialSession: session,
+      user: session.user,
+      initialPosts: posts,
+    },
+  }
+}
