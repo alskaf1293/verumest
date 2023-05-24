@@ -19,14 +19,14 @@ type Message = {
       const userMessage = { text: input, user: 'You' };
     
       const initialPrompt = "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible.";
-      const subsequentPrompt = "This is a chat that a user had with a chatbot. From this, extract information about the following characteristics about the user. It is alright if you put some not-so-good qualities such as arrogance. It is alright if there isn't any information for a category. The goal is to make a short profile of the person. Eg. Personality: this person is arrogant, ...";
+      const subsequentPrompt = "Keep the conversation flowing. Have them talk about themselves and make sure they feel free to express their opinions about anything. The user often might not know what to say. Don't put them in that situation.";
     
       const prompt = firstVisit ? initialPrompt : subsequentPrompt;
     
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4',
           messages: [
           {
               role: "system",
@@ -59,6 +59,27 @@ type Message = {
     const submitChat = async () => {
       const chatHistory = messages.map((message) => `${message.user}: ${message.text}`).join('\n');
       
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+      // Store chat history if this is not the first visit
+      if (!firstVisit) {
+        const { error: chatHistoryError } = await supabase
+          .from('chat_history')
+          .insert([
+            { 
+              user_id: user.id,
+              chat: chatHistory,
+              timestamp: new Date(),
+            },
+          ]);
+
+        if (chatHistoryError) {
+          console.log('Error inserting chat history:', chatHistoryError);
+        } else {
+          console.log('Chat history inserted successfully');
+        }
+      }
+
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
@@ -85,12 +106,10 @@ type Message = {
           },
         }
         
-      );
-      
+      );      
 
       const profile = response.data.choices[0].message.content;
       console.log(profile)
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
       // Insert profile into Supabase DB
       const { error } = await supabase
         .from('chat_profiles') // Replace with your table name
