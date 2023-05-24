@@ -9,14 +9,19 @@ type Message = {
     user: string;
   };
 
-  export default function Chat({ user, initialPosts }: { user: User, initialPosts: any[] }) {
+  export default function Chat({ user, initialPosts, firstVisit }: { user: User, initialPosts: any[], firstVisit: boolean }) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
 
-    const sendMessage = async (event : FormEvent) => {
+    const sendMessage = async (event: FormEvent) => {
       event.preventDefault();
     
       const userMessage = { text: input, user: 'You' };
+    
+      const initialPrompt = "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible.";
+      const subsequentPrompt = "This is a chat that a user had with a chatbot. From this, extract information about the following characteristics about the user. It is alright if you put some not-so-good qualities such as arrogance. It is alright if there isn't any information for a category. The goal is to make a short profile of the person. Eg. Personality: this person is arrogant, ...";
+    
+      const prompt = firstVisit ? initialPrompt : subsequentPrompt;
     
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
@@ -25,7 +30,7 @@ type Message = {
           messages: [
           {
               role: "system",
-              content: "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible."
+              content: prompt
           },
           {
               role: "user",
@@ -44,7 +49,7 @@ type Message = {
           },
         }
       );
-        
+    
       const botMessage = { text: response.data.choices[0].message.content, user: 'Bot' };
     
       setMessages([...messages, userMessage, botMessage]);
@@ -79,6 +84,7 @@ type Message = {
             Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
           },
         }
+        
       );
       
 
@@ -99,6 +105,19 @@ type Message = {
         console.log('Error inserting profile:', error);
       } else {
         console.log('Profile inserted successfully');
+      }
+      // After the user submits the chat for the first time, update the 'first_visit' flag in the database
+      if (firstVisit) {
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ first_visit: false })
+          .eq('user_id', user.id);
+  
+        if (updateError) {
+          console.log('Error updating user:', updateError);
+        } else {
+          console.log('User updated successfully');
+        }
       }
       
     };
@@ -149,11 +168,21 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   if (error) console.log("Error fetching posts:", error)
 
+  const { data: userWithFlag, error: flagError } = await supabase
+    .from('user_profiles')
+    .select('first_visit')
+    .eq('user_id', session.user.id);
+
+  if (flagError) console.log("Error fetching user's first visit flag:", flagError)
+
+  const firstVisit = userWithFlag ? userWithFlag[0].first_visit : false;
+
   return {
     props: {
       initialSession: session,
       user: session.user,
       initialPosts: posts,
+      firstVisit: firstVisit,
     },
   }
 }
