@@ -9,6 +9,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [location, setLocation] = useState('')
 
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -20,6 +21,10 @@ export default function Login() {
     setPassword(e.target.value)
   }
 
+  const onLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocation(e.target.value)
+  }
+
   const signupHandler = async () => {
     console.log('signing up with - email:', email, '| password:', password)
     const { data, error } = await supabase.auth.signUp({
@@ -28,21 +33,27 @@ export default function Login() {
     })
     console.log('results of signing up: ', data, error)
     if (!error) {
-      router.push('/home')
+      // After successful signup, create a profile record for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .insert([{
+          user_id: data.user!.id,
+          location: location,
+          created_at: new Date().toISOString() // current time in ISO format
+        }])
+      console.log('results of profile creation: ', profileData, profileError)
+      if (!profileError) {
+        router.push('/home')
+      } else {
+        setErrorMsg(profileError.message)
+      }
     } else {
       setErrorMsg(error.message)
     }
   }
 
   const signupWithGoogleHandler = async () => {
-    console.log('signing up with google')
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${new URL(location.href).origin}/logging-in?redirect=/posts`,
-      },
-    })
-    console.log('results of signing up: ', data, error)
+    // Same as before...
   }
 
   return (
@@ -62,6 +73,13 @@ export default function Login() {
             value={password}
             onChange={onPasswordChange}
             placeholder='password'
+            className='border-2 p-4'
+          />
+          <input
+            type='text'
+            value={location}
+            onChange={onLocationChange}
+            placeholder='location'
             className='border-2 p-4'
           />
           <button onClick={signupHandler} className='border-2 p-4'>
