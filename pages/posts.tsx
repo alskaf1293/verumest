@@ -3,28 +3,80 @@ import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react'
 import { createServerSupabaseClient, User } from '@supabase/auth-helpers-nextjs'
 import { Database } from '../types/database'
 import { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
+import axios from 'axios'
 
-export default function Home({ user, initialPosts }: { user: User, initialPosts: any[] }) {
+export default function Posts({ user, initialPosts }: { user: User, initialPosts: any[] }) {
   const supabase = useSupabaseClient<Database>()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [posts, setPosts] = useState(initialPosts)
+  const router = useRouter()
 
   const handlePostSubmit = async () => {
     // Insert post into the database
-    const { data: post, error } = await supabase
+    const newPost = { title, content, user_id: user.id}
+    const { data: data, error } = await supabase
       .from('posts')
-      .insert([{ title, content, user_id: user.id }])
-  
+      .insert([newPost])
+      .select()
+
     if (error) {
       console.log("Error creating post:", error)
-    } else if (post) {
+    } else if (data) {
+      const post = data[0]
+      console.log(post)
       // If a post was inserted successfully, post[0] will contain the new post.
-      console.log(post[0])
-      setPosts([...posts, post[0]])
+      setPosts([...posts, post])
+      // Redirect to home page
+      //router.push('/home')
     }
   }
-  //handlePostSubmit
+
+  useEffect(() => {
+    const submitEmbeddings = async () => {
+      if (posts.length > initialPosts.length) {
+        const latestPost = posts[posts.length - 1];
+        const prompt = latestPost.title + ": " + latestPost.content; 
+        const latestId = latestPost.id;
+        try {
+          const response = await axios.post(
+            'https://api.openai.com/v1/embeddings',
+            {
+              model: 'text-embedding-ada-002',
+              input: prompt,
+            },
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
+              },
+            }
+          );
+  
+          const embedding = response.data.data[0].embedding; // hypothetical response format
+  
+          // Update the 'embeddings' column in the database for the latest post
+          const { data, error } = await supabase
+            .from('posts')
+            .update({ embedding: embedding })
+            .eq('id', latestId);
+  
+          if (error) {
+            console.log("Error updating post embeddings:", error);
+          } else {
+            console.log("Embeddings updated successfully");
+          }
+  
+        } catch (error) {
+          console.log('Error calling Embeddings API:', error);
+        }
+      }
+    };
+    submitEmbeddings();
+  }, [posts]);
+
+
   return (
     <>
       <div style={{ fontFamily: 'Arial, sans-serif' }}>

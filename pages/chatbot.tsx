@@ -9,19 +9,14 @@ type Message = {
     user: string;
   };
 
-  export default function Chat({ user, initialPosts, firstVisit }: { user: User, initialPosts: any[], firstVisit: boolean }) {
+  export default function Chat({ user, initialPosts }: { user: User, initialPosts: any[] }) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
 
-    const sendMessage = async (event: FormEvent) => {
+    const sendMessage = async (event : FormEvent) => {
       event.preventDefault();
     
       const userMessage = { text: input, user: 'You' };
-    
-      const initialPrompt = "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible.";
-      const subsequentPrompt = "This is a chat that a user had with a chatbot. From this, extract information about the following characteristics about the user. It is alright if you put some not-so-good qualities such as arrogance. It is alright if there isn't any information for a category. The goal is to make a short profile of the person. Eg. Personality: this person is arrogant, ...";
-    
-      const prompt = firstVisit ? initialPrompt : subsequentPrompt;
     
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
@@ -30,7 +25,7 @@ type Message = {
           messages: [
           {
               role: "system",
-              content: prompt
+              content: "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible."
           },
           {
               role: "user",
@@ -49,7 +44,7 @@ type Message = {
           },
         }
       );
-    
+        
       const botMessage = { text: response.data.choices[0].message.content, user: 'Bot' };
     
       setMessages([...messages, userMessage, botMessage]);
@@ -58,25 +53,12 @@ type Message = {
 
     const submitChat = async () => {
       const chatHistory = messages.map((message) => `${message.user}: ${message.text}`).join('\n');
-      
+          
       const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        'https://api.openai.com/v1/embeddings',
         {
-          model: 'gpt-4-0314',
-          messages: [
-            {
-              role: "system",
-              content: "This is a chat that a user had with a chatbot. From this, extract information about the following characteristics about the user. It is alright if you put some not-so-good qualities such as arrogance. It is alright if there isn't any information for a category. The goal is to make a short profile of the person. Eg. Personality: this person is arrogant, ..."
-            },
-            {
-              role: "user",
-              content: chatHistory
-            }
-          ],
-          max_tokens: 2000,
-          n: 1,
-          stop: null,
-          temperature: 0,
+          model: 'text-embedding-ada-002',
+          input: chatHistory
         },
         {
           headers: {
@@ -84,40 +66,25 @@ type Message = {
             Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
           },
         }
-        
       );
-      
-
-      const profile = response.data.choices[0].message.content;
-      console.log(profile)
+      console.log(response)
+      const embedding = response.data.data[0].embedding; // hypothetical response format
+      console.log(embedding)
       const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-      // Insert profile into Supabase DB
+      // Insert embedding into Supabase DB
       const { error } = await supabase
-        .from('chat_profiles') // Replace with your table name
+        .from('chat_embeddings') // Replace with your table name
         .insert([
           { 
             user_id: user.id, // assuming "user" prop includes the user id
-            profile: profile
+            embedding: embedding // store the embedding
           },
         ]);
-    
+      
       if (error) {
-        console.log('Error inserting profile:', error);
+        console.log('Error inserting embedding:', error);
       } else {
-        console.log('Profile inserted successfully');
-      }
-      // After the user submits the chat for the first time, update the 'first_visit' flag in the database
-      if (firstVisit) {
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update({ first_visit: false })
-          .eq('user_id', user.id);
-  
-        if (updateError) {
-          console.log('Error updating user:', updateError);
-        } else {
-          console.log('User updated successfully');
-        }
+        console.log('Embedding inserted successfully');
       }
       
     };
@@ -168,21 +135,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   if (error) console.log("Error fetching posts:", error)
 
-  const { data: userWithFlag, error: flagError } = await supabase
-    .from('user_profiles')
-    .select('first_visit')
-    .eq('user_id', session.user.id);
-
-  if (flagError) console.log("Error fetching user's first visit flag:", flagError)
-
-  const firstVisit = userWithFlag ? userWithFlag[0].first_visit : false;
-
   return {
     props: {
       initialSession: session,
       user: session.user,
       initialPosts: posts,
-      firstVisit: firstVisit,
     },
   }
 }
