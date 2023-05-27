@@ -32,7 +32,7 @@ type Message = {
               content: `${messages.map((message) => message.text).join('\n')}\n${input}\n`
           }
           ],
-          max_tokens: 50,
+          max_tokens: 200,
           n: 1,
           stop: null,
           temperature: 0.5,
@@ -53,7 +53,7 @@ type Message = {
 
     const submitChat = async () => {
       const chatHistory = messages.map((message) => `${message.user}: ${message.text}`).join('\n');
-          
+    
       const response = await axios.post(
         'https://api.openai.com/v1/embeddings',
         {
@@ -67,17 +67,18 @@ type Message = {
           },
         }
       );
-      console.log(response)
+      
       const embedding = response.data.data[0].embedding; // hypothetical response format
-      console.log(embedding)
       const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+      
       // Insert embedding into Supabase DB
       const { error } = await supabase
-        .from('chat_embeddings') // Replace with your table name
+        .from('chat_history') // Replace with your table name
         .insert([
           { 
             user_id: user.id, // assuming "user" prop includes the user id
-            embedding: embedding // store the embedding
+            embedding: embedding, // store the embedding
+            chat_history: chatHistory, // store the chat history
           },
         ]);
       
