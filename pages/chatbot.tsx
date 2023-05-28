@@ -18,14 +18,6 @@ type Message = {
     
       const userMessage = { text: input, user: 'You' };
     
-<<<<<<< HEAD
-=======
-      const initialPrompt = "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible.";
-      const subsequentPrompt = "Keep the conversation flowing. Have them talk about themselves and make sure they feel free to express their opinions about anything. The user often might not know what to say. Don't put them in that situation.";
-    
-      const prompt = firstVisit ? initialPrompt : subsequentPrompt;
-    
->>>>>>> a70f3fa804fb90407e87de3eb2aa085891635f6a
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
@@ -43,7 +35,7 @@ type Message = {
           max_tokens: 200,
           n: 1,
           stop: null,
-          temperature: 0.5,
+          temperature: 0,
         },
         {
           headers: {
@@ -60,77 +52,95 @@ type Message = {
     };
 
     const submitChat = async () => {
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
       const chatHistory = messages.map((message) => `${message.user}: ${message.text}`).join('\n');
-<<<<<<< HEAD
-    
-=======
       
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-
-      // Store chat history if this is not the first visit
-      if (!firstVisit) {
-        const { error: chatHistoryError } = await supabase
-          .from('chat_history')
-          .insert([
-            { 
-              user_id: user.id,
-              chat: chatHistory,
-              timestamp: new Date(),
-            },
-          ]);
-
-        if (chatHistoryError) {
-          console.log('Error inserting chat history:', chatHistoryError);
-        } else {
-          console.log('Chat history inserted successfully');
-        }
-      }
-
->>>>>>> a70f3fa804fb90407e87de3eb2aa085891635f6a
-      const response = await axios.post(
-        'https://api.openai.com/v1/embeddings',
-        {
-          model: 'text-embedding-ada-002',
-          input: chatHistory
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
-          },
-        }
-<<<<<<< HEAD
-      );
-      
-      const embedding = response.data.data[0].embedding; // hypothetical response format
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-      
-      // Insert embedding into Supabase DB
-=======
-        
-      );      
-
-      const profile = response.data.choices[0].message.content;
-      console.log(profile)
-      // Insert profile into Supabase DB
->>>>>>> a70f3fa804fb90407e87de3eb2aa085891635f6a
       const { error } = await supabase
-        .from('chat_history') // Replace with your table name
-        .insert([
-          { 
-            user_id: user.id, // assuming "user" prop includes the user id
-            embedding: embedding, // store the embedding
-            chat_history: chatHistory, // store the chat history
+              .from('chat_history') // Replace with your table name
+              .insert([
+                  { 
+                      user_id: user.id, // assuming "user" prop includes the user id
+                      chat_history: chatHistory, // store the sentence
+                  },
+              ]);
+
+      const sentencesResponse = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          {
+              model: 'gpt-4',
+              messages: [
+                  {
+                      role: "system",
+                      content: "This is a chat that a user had with a chatbot. Describe the user in as many descriptive sentences as you can, but do so from the first-person point of view. For example, \"I am very interested in video games.\" could be one description. Every unique description should be a sentence, and every sentence should represent a unique aspect of the user. End every sentence with a newline."
+                  },
+                  {
+                      role: "user",
+                      content: chatHistory
+                  }
+              ],
+              max_tokens: 200,
+              n: 1,
+              stop: null,
+              temperature: 0,
           },
-        ]);
+          {
+              headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
+              },
+          }
+      );
+
+      //split chat History using python server
+      //console.log(sentencesResponse.data.choices[0].message.content)
+      //const res = await axios.post(
+      //  'http://localhost:5000/split_sentences',
+      //  {
+      //    text: sentencesResponse.data.choices[0].message.content
+      //  }
+      //);
+      //const sentences = res.data;
+  
+      const bruh = sentencesResponse.data.choices[0].message.content;
+      const sentences = bruh.split('\n');
       
-      if (error) {
-        console.log('Error inserting embedding:', error);
-      } else {
-        console.log('Embedding inserted successfully');
+      
+      for (const sentence of sentences) {
+          const response = await axios.post(
+              'https://api.openai.com/v1/embeddings',
+              {
+                  model: 'text-embedding-ada-002',
+                  input: sentence
+              },
+              {
+                  headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
+                  },
+              }
+          );
+          
+          const embedding = response.data.data[0].embedding; // hypothetical response format
+          
+          // Insert embedding into Supabase DB
+          const { error } = await supabase
+              .from('chat_embeddings') // Replace with your table name
+              .insert([
+                  { 
+                      user_id: user.id, // assuming "user" prop includes the user id
+                      embedding: embedding, // store the embedding
+                      sentiment: sentence, // store the sentence
+                  },
+              ]);
+          
+          if (error) {
+              console.log('Error inserting embedding:', error);
+          } else {
+              console.log('Embedding inserted successfully');
+          }
       }
-      
-    };
+  };
 
   return (
     <div>

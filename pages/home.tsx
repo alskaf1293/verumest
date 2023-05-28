@@ -55,7 +55,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   // Fetch chat history embedding for the current user
   const { data: chatHistory, error: chatHistoryError } = await supabase
-    .from('chat_history')
+    .from('chat_embeddings')
     .select('embedding')
     .eq('user_id', session.user.id);
 
