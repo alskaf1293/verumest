@@ -3,6 +3,7 @@ import { createServerSupabaseClient, User } from '@supabase/auth-helpers-nextjs'
 import { GetServerSidePropsContext } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from './supabaseClient.js'
+import Sidebar from './components/Sidebar'
 
 function cosineSimilarity(a: number[], b: number[]): number {
   const dotproduct = a.reduce((sum, a_i, i) => sum + a_i * b[i], 0);
@@ -139,8 +140,9 @@ export default function Home({ initialPosts, user }: { initialPosts: PostType[],
   const [posts, setPosts] = useState(initialPosts)
 
   return (
-    <>
-      <div style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ display: 'flex', fontFamily: 'Arial, sans-serif' }}>
+      <Sidebar /> {/* Add Sidebar component here */}
+      <div>
         <h1 style={{ textAlign: 'center' }}>YOUR FEED</h1>
 
         <h2>Posts</h2>
@@ -148,7 +150,7 @@ export default function Home({ initialPosts, user }: { initialPosts: PostType[],
           <Post key={post.id} post={post} user={user} />   // Add a key prop here
         ))}
       </div>
-    </>
+    </div>
   )
 }
 
