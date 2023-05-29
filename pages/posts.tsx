@@ -6,12 +6,13 @@ import { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import axios from 'axios'
 
-export default function Posts({ user, initialPosts }: { user: User, initialPosts: any[] }) {
+export default function Posts({ user, initialPosts, users }: { user: User, initialPosts: any[], users: any[] }) {
   const supabase = useSupabaseClient<Database>()
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [posts, setPosts] = useState(initialPosts)
   const router = useRouter()
+  console.log(user, initialPosts, users)
 
   const handlePostSubmit = async () => {
     // Insert post into the database
@@ -102,12 +103,18 @@ export default function Posts({ user, initialPosts }: { user: User, initialPosts
             Submit Post
           </button>
         </div>
-
         <h2>Your Posts</h2>
         {posts.filter(Boolean).map((post) => (
           <div key={post.id} style={{ marginBottom: '2rem', border: '1px solid #ddd', padding: '1rem' }}>
             <h3>{post.title}</h3>
             <p>{post.content}</p>
+            {post.viewed_by && (
+              <p>Viewed by: {
+                post.viewed_by?.map((userId: string) => {
+                  return userId;
+                }).join(', ')
+              }</p>
+            )}
           </div>
         ))}
       </div>
@@ -137,6 +144,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
     .select('*')
     .eq('user_id', session.user.id)
 
+  // Fetch all users
+  const { data: users } = await supabase
+    .from('users')
+    .select('*')
+
   if (error) console.log("Error fetching posts:", error)
 
   return {
@@ -144,6 +156,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       initialSession: session,
       user: session.user,
       initialPosts: posts,
+      users: users,   // Pass users to the component
     },
   }
 }

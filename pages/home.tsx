@@ -20,6 +20,7 @@ type PostType = {
   title: string;
   content: string;
   user_id: string;
+  viewed_by: string[];
 };
 
 type CommentType = {
@@ -28,16 +29,49 @@ type CommentType = {
   user_id: string;
   post_id: string;
 };
-type PostProps = {
-  post: PostType,
-  user: User
-};
 
 function Post({ post, user }: { post: PostType, user: User }) {
   const [comments, setComments] = useState<CommentType[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('')
 
+  useEffect(() => {
+    const fetchComments = async () => {
+      const { data: fetchedComments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', post.id);
+      
+      if (error) {
+        console.error('There was an error fetching the comments', error);
+      } else {
+        setComments(fetchedComments as CommentType[]);
+      }
+    };
+  
+    const updateViewedBy = async () => {
+      // Check if the post has been viewed by the user
+      if (!post.viewed_by?.includes(user.id)) {
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .update({
+              viewed_by: [...(post.viewed_by || []), user.id]
+            })
+            .eq('id', post.id);
+  
+          if (error) {
+            throw error;
+          }
+        } catch (error) {
+          console.log("Error updating post viewed_by:", error);
+        }
+      }
+    };
+  
+    fetchComments();
+    updateViewedBy();
+  }, [post.id]);
   useEffect(() => {
     const fetchComments = async () => {
       const { data: fetchedComments, error } = await supabase
@@ -111,7 +145,7 @@ export default function Home({ initialPosts, user }: { initialPosts: PostType[],
 
         <h2>Posts</h2>
         {posts.filter(Boolean).map((post) => (
-          <Post post={post} user={user} />
+          <Post key={post.id} post={post} user={user} />   // Add a key prop here
         ))}
       </div>
     </>
