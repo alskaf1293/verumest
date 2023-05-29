@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
+.application {
+    margin: 0 auto;
+    padding: 0px;
+    display: flex; /* add this */
+    justify-content: center;
+    font-family: 'Comic Neue';
+    background-color: #000000;
+    color: white;
+}
+
+.sidebar {
+    position: relative;
+    width: 15%; /* add this */
+    padding: 1em;
+    color: white;
+    font-family: 'Segoe UI';
+}
+
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 50%;
+    width: 1px;  /* adjust width as needed */
+    background: #333333;
+}
+
+.rightsidebar {
+    width: 20%; /* add this */
+    padding: 1em;
+    color: white;
+    font-family: 'Comic Neue', cursive;
+}
+
+.sidebarLink {
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    font-size: 1.7em;
+}
+
+.sidebarList {
+
+}
+
+.homefeed {
+    padding-left: 5%;
+    padding-right: 5%;
+    width: 50%;
+    display: column;
+}
+
+.post {
+    display: column;
+    width: 100%;
+    justify-content: center;
+    margin-Bottom: 2rem; 
+    padding: 1rem;
+}
+
+.separatorBar {
+    width: 50%;  /* You can adjust this value as needed */
+    height: 1px;  /* You can adjust this value as needed */
+    background: linear-gradient(to right, #B0A0E8, #9254D6, #4E51D1);
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 2em; /* adjust these to your needs */
+    margin-bottom: 2em; /* adjust these to your needs */
+}
+
+

@@ -5,7 +5,8 @@ import { Database } from '../types/database'
 import { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import axios from 'axios'
-import Sidebar from './components/Sidebar'
+import Sidebar from '../components/Sidebar'
+import Application from '@/components/Application'
 
 export default function Posts({ user, initialPosts, users }: { user: User, initialPosts: any[], users: any[] }) {
   const supabase = useSupabaseClient<Database>()
@@ -80,7 +81,7 @@ export default function Posts({ user, initialPosts, users }: { user: User, initi
 
   return (
     <>
-      <div style={{ display: 'flex', fontFamily: 'Arial, sans-serif' }}>
+      <Application>
         <Sidebar/>
         <div style={{ display: 'block'}}>
           <h1 style={{ textAlign: 'center' }}>POST SOMETHING</h1>
@@ -120,7 +121,7 @@ export default function Posts({ user, initialPosts, users }: { user: User, initi
             </div>
           ))}
         </div>
-      </div>
+      </Application>
     </>
   )
 }

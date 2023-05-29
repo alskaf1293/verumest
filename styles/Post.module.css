@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+
+.title {
+    font-weight: bold;
+    font-family: 'Comic Neue';
+    font-size: 1.5em;
+}
+
+.showComments {
+    color: #666666;
+    font-size: 1.0em;
+}
