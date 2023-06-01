@@ -9,7 +9,6 @@ const Sidebar = () => {
         <li className={styles.sidebarLink}><Link href="/home">Home</Link></li>
         <li className={styles.sidebarLink}><Link href="/posts">Post</Link></li>
         <li className={styles.sidebarLink}><Link href="/chatbot">Messages</Link></li>
-        <li className={styles.sidebarLink}><Link href="/">Notifications</Link></li>
         <li className={styles.sidebarLink}><Link href="/">Settings</Link></li>
       </ul>
     </div>

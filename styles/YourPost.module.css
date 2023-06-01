@@ -1,0 +1,62 @@
+
+.container {
+    align-items: center;
+    font-family: Georgia;
+}
+
+.yourposts {
+    align-items: center;
+    text-align: center;
+    font-size: 1.5em;
+}
+
+.createpost {
+    text-align: center;
+    font-size: 2em;
+    padding: 2rem
+}
+
+.titletextbox {
+
+    background-color: #C0C0C0;
+    color: black;
+    border-radius: 10px;
+    display: block; 
+    width: 100%; 
+    padding: 0.5rem
+}
+
+.contenttextbox {
+    display: block; 
+    width: 100%; 
+    padding: 0.5rem; 
+    margin-top: 1rem;
+    background-color: #C0C0C0;
+    color: black;
+    border-radius: 10px;
+}
+
+.submitpost {
+    display: block;
+    margin: 2rem auto;
+    padding: 1rem;
+    cursor: pointer;
+    color: #fff;
+    background-clip: border-box;
+    background-color: #4E51D1;
+    border-radius: 10px;
+    background-clip: padding-box, border-box;
+    box-decoration-break: clone;
+}
+
+.submitpost:after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    bottom: 2px;
+    left: 2px;
+    background: #ffffff; /* replace with your desired inner background color */
+    border-radius: 5px;
+    z-index: -1;
+}
