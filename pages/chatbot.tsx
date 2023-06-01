@@ -1,17 +1,117 @@
 import { GetServerSidePropsContext } from 'next'
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { createServerSupabaseClient, User } from '@supabase/auth-helpers-nextjs'
 import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient'
 
 type Message = {
     text: string;
     user: string;
   };
+  type ChatRequest = {
+    id: string;
+    sender_id: string;
+    receiver_id: string;
+    message: string;
+    status: string;
+  };
 
+  type ChatMessage = {
+    id: string;
+    sender_id: string;
+    receiver_id: string;
+    message: string;
+  };
+  
   export default function Chat({ user, initialPosts }: { user: User, initialPosts: any[] }) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
+    const [chatInput, setChatInput] = useState('');
+    const [chatRequests, setChatRequests] = useState<ChatRequest[]>([]);
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [selectedChatPartner, setSelectedChatPartner] = useState('');
+    const chatPartners = Array.from(new Set(chatMessages.map(msg => (msg.sender_id !== user.id ? msg.sender_id : msg.receiver_id))));
+    
+  useEffect(() => {
+    fetchChatMessages();
+  }, [chatRequests]);
+
+  const fetchChatMessages = async () => {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: true }) // Order by creation time
+
+    if (error) {
+      console.error('Error fetching chat messages:', error)
+      return
+    }
+
+    setChatMessages(data as ChatMessage[]);
+  }
+
+  const sendChatMessage = async (event : FormEvent) => {
+    event.preventDefault();
+  
+    // Check if there is an accepted chat request with the current user
+    const chatRequest = chatRequests.find(request => request.status === 'accepted' && request.sender_id === selectedChatPartner);
+    if (!chatRequest) {
+      alert('You cannot send a message until your chat request is accepted.');
+      return;
+    }
+  
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert([
+        { sender_id: user.id, receiver_id: selectedChatPartner, message: input },
+      ])
+  
+    if (error) {
+      console.error('Error sending message:', error)
+      return
+    }
+  
+    // Refresh chat messages
+    fetchChatMessages();
+  
+    setInput('');
+  }
+
+
+  useEffect(() => {
+    fetchChatRequests();
+  }, []);
+
+  const fetchChatRequests = async () => {
+    const { data, error } = await supabase
+      .from('chat_requests')
+      .select('*')
+      .eq('receiver_id', user.id)
+
+    if (error) {
+      console.error('Error fetching chat requests:', error)
+      return
+    }
+
+    setChatRequests(data as ChatRequest[]);
+  }
+
+  const handleChatRequest = async (requestId: string, status: string) => {
+    const { error } = await supabase
+      .from('chat_requests')
+      .update({ status })
+      .eq('id', requestId)
+
+    if (error) {
+      console.error('Error updating chat request:', error)
+      return
+    }
+
+    // Refresh chat requests
+    fetchChatRequests();
+  }
 
     const sendMessage = async (event : FormEvent) => {
       event.preventDefault();
@@ -145,15 +245,63 @@ type Message = {
   return (
     <div>
       <h1>Chat</h1>
-      {messages.map((message, index) => (
-        <p key={index}>
-          <strong>{message.user}: </strong> {message.text}
-        </p>
+      {/* Display chat requests */}
+      <h2>Chat Requests</h2>
+      {chatRequests.map((request) => (
+        request.status !== 'accepted' && (
+          <div key={request.id}>
+            <p>
+              <strong>{request.sender_id}: </strong> {request.message}
+            </p>
+            <button onClick={() => handleChatRequest(request.id, 'accepted')}>Accept</button>
+            <button onClick={() => handleChatRequest(request.id, 'rejected')}>Reject</button>
+          </div>
+        )
       ))}
+      <br></br>
+      <br></br>
+      {/* Display chat messages */}
+      <h2>Chat Messages</h2>
+      <select onChange={(e) => setSelectedChatPartner(e.target.value)}>
+        <option value="">Select a chat partner</option>
+        {chatPartners.map((partner) => (
+          <option key={partner} value={partner}>
+            {partner}
+          </option>
+        ))}
+      </select>
+      {chatMessages
+        .filter(
+          (message) =>
+            (message.sender_id === user.id && message.receiver_id === selectedChatPartner) ||
+            (message.sender_id === selectedChatPartner && message.receiver_id === user.id)
+        )
+        .map((message) => (
+          <div key={message.id} style={{ backgroundColor: message.sender_id === user.id ? 'lightblue' : 'lightgreen' }}>
+            <p>
+              <strong>{message.sender_id}: </strong> {message.message}
+            </p>
+          </div>
+        ))}
+      {selectedChatPartner && (
+        <form onSubmit={sendChatMessage}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message"
+          />
+          <button type="submit">Send</button>
+        </form>
+      )}
+      
+      <br></br>
+      <br></br>
+      <br></br>
+      <label>CHATGPT</label>
       <form onSubmit={sendMessage}>
         <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
           placeholder="Type a message"
         />
         <button type="submit">Send</button>

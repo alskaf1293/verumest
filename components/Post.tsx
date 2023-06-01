@@ -4,6 +4,7 @@ import { User } from '@supabase/auth-helpers-nextjs'
 import { supabase } from '../pages/supabaseClient.js'
 import styles from '../styles/App.module.css';
 import postStyles from '../styles/Post.module.css'
+import Link from 'next/link'
 
 type PostType = {
   id: string;
@@ -101,28 +102,30 @@ function Post({ post, user }: { post: PostType, user: User }) {
     }
   
     return (
-      <div key={post.id} className={styles.post}>
-        <h3 className={postStyles.title}>{post.title}</h3>
-        <p>{post.content}</p>
-        {/*<p>Posted by: {post.user_id}</p> */}
-        <button className={postStyles.showComments} onClick={() => setShowComments(!showComments)}>
-          {showComments ? 'Hide Comments' : 'Show Comments'}
-        </button>
-        {showComments && (
-          <div>
-            <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write your comment here"></textarea>
-            <button onClick={() => postComment(post.id)}>Post Comment</button>
-            <h3>Comments</h3>
-            {comments.map(comment => (
-              <div key={comment.id}>
-                <p>{comment.content}</p>
-                <p>Commented by: {comment.user_id}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className={styles.separatorBar}></div>
-      </div>
+      <Link href={`/user/${post.user_id}`}>
+        <div key={post.id} className={styles.post}>
+          <h3 className={postStyles.title}>{post.title}</h3>
+          <p>{post.content}</p>
+          {/*<p>Posted by: {post.user_id}</p> */}
+          <button className={postStyles.showComments} onClick={() => setShowComments(!showComments)}>
+            {showComments ? 'Hide Comments' : 'Show Comments'}
+          </button>
+          {showComments && (
+            <div>
+              <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write your comment here"></textarea>
+              <button onClick={() => postComment(post.id)}>Post Comment</button>
+              <h3>Comments</h3>
+              {comments.map(comment => (
+                <div key={comment.id}>
+                  <p>{comment.content}</p>
+                  <p>Commented by: {comment.user_id}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={styles.separatorBar}></div>
+        </div>
+      </Link>
     )
   }
 

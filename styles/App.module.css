@@ -5,7 +5,7 @@
     padding: 0px;
     display: flex; /* add this */
     justify-content: center;
-    font-family: 'Comic Neue';
+    font-family: 'Georgia';
     background-color: #000000;
     color: white;
 }
@@ -15,7 +15,7 @@
     width: 15%; /* add this */
     padding: 1em;
     color: white;
-    font-family: 'Segoe UI';
+    font-family: 'Georgia';
 }
 
 .sidebar::after {
@@ -32,7 +32,7 @@
     width: 20%; /* add this */
     padding: 1em;
     color: white;
-    font-family: 'Comic Neue', cursive;
+    font-family: 'Georgia', cursive;
 }
 
 .sidebarLink {
