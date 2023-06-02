@@ -284,56 +284,49 @@ type Message = {
     <Application>
       <Sidebar/>
       <HomeFeed>
-        <h1>Chat</h1>
-        {/* Display chat requests */}
-        <h2>Chat Requests</h2>
-        {chatRequests.map((request) => (
-          request.status !== 'accepted' && (
-            <div key={request.id}>
-              <p>
-                <strong>{request.sender_id}: </strong> {request.message}
-              </p>
-              <button onClick={() => handleChatRequest(request.id, 'accepted')}>Accept</button>
-              <button onClick={() => handleChatRequest(request.id, 'rejected')}>Reject</button>
+
+        {/* Display chat partners on the side */}
+        <div style={{ display: 'flex' }}>
+            <div style={{ marginRight: '20px' }}>
+                {chatPartners.map((partner) => (
+                    <button 
+                        key={partner}
+                        style={partner === selectedChatPartner ? { backgroundColor: 'lightblue' } : undefined}
+                        onClick={() => setSelectedChatPartner(partner)}
+                    >
+                        {partner}
+                    </button>
+                ))}
             </div>
-          )
-        ))}
-        <br></br>
-        <br></br>
-        {/* Display chat messages */}
-        <h2>Chat Messages</h2>
-        <select onChange={(e) => setSelectedChatPartner(e.target.value)}>
-          <option value="">Select a chat partner</option>
-          {chatPartners.map((partner) => (
-            <option key={partner} value={partner}>
-              {partner}
-            </option>
-          ))}
-        </select>
-        {chatMessages
-          .filter(
-            (message) =>
-              (message.sender_id === user.id && message.receiver_id === selectedChatPartner) ||
-              (message.sender_id === selectedChatPartner && message.receiver_id === user.id)
-          )
-          .map((message) => (
-            <div key={message.id} style={{ backgroundColor: message.sender_id === user.id ? 'lightblue' : 'lightgreen' }}>
-              <p>
-                <strong>{message.sender_id}: </strong> {message.message}
-              </p>
+
+            {/* Display chat messages */}
+            <div>
+                {chatMessages
+                .filter(
+                    (message) =>
+                    (message.sender_id === user.id && message.receiver_id === selectedChatPartner) ||
+                    (message.sender_id === selectedChatPartner && message.receiver_id === user.id)
+                )
+                .map((message) => (
+                    <div key={message.id} style={{ backgroundColor: message.sender_id === user.id ? 'lightblue' : 'lightgreen' }}>
+                    <p>
+                        <strong>{message.sender_id}: </strong> {message.message}
+                    </p>
+                    </div>
+                ))}
+                {selectedChatPartner && (
+                <form onSubmit={sendChatMessage}>
+                    <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type a message"
+                    style={{color: 'black'}}
+                    />
+                    <button type="submit">Send</button>
+                </form>
+                )}
             </div>
-          ))}
-        {selectedChatPartner && (
-          <form onSubmit={sendChatMessage}>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message"
-              style={{color: 'black'}}
-            />
-            <button type="submit">Send</button>
-          </form>
-        )}
+        </div>
         
         <br></br>
         <br></br>
