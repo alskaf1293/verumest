@@ -38,7 +38,7 @@ type Message = {
     
   useEffect(() => {
     fetchChatMessages();
-  }, [chatRequests]);
+  }, [chatRequests])
 
   const fetchChatMessages = async () => {
     const { data, error } = await supabase
@@ -59,7 +59,14 @@ type Message = {
     event.preventDefault();
   
     // Check if there is an accepted chat request with the current user
-    const chatRequest = chatRequests.find(request => request.status === 'accepted' && request.sender_id === selectedChatPartner);
+    const chatRequest = chatRequests.find(request => 
+      request.status === 'accepted' && 
+      ((request.sender_id === user.id && request.receiver_id === selectedChatPartner) || 
+       (request.receiver_id === user.id && request.sender_id === selectedChatPartner)));
+
+    console.log("selectedChatPartner: ", selectedChatPartner);
+    console.log("chatRequests: ", chatRequests);
+    console.log("chatRequest: ", chatRequest);
     if (!chatRequest) {
       alert('You cannot send a message until your chat request is accepted.');
       return;
@@ -91,68 +98,96 @@ type Message = {
     const { data, error } = await supabase
       .from('chat_requests')
       .select('*')
-      .eq('receiver_id', user.id)
-
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+  
     if (error) {
       console.error('Error fetching chat requests:', error)
       return
     }
-
+  
     setChatRequests(data as ChatRequest[]);
   }
 
   const handleChatRequest = async (requestId: string, status: string) => {
-    const { error } = await supabase
-      .from('chat_requests')
-      .update({ status })
-      .eq('id', requestId)
+    // Fetch the chat request that needs to be updated
+    const { data: chatRequest, error: fetchError } = await supabase
+        .from('chat_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
 
-    if (error) {
-      console.error('Error updating chat request:', error)
-      return
+    if (fetchError || !chatRequest) {
+        console.error('Error fetching chat request:', fetchError)
+        return;
     }
 
-    // Refresh chat requests
-    fetchChatRequests();
-  }
+    // Update the chat request status
+    const { error: updateError } = await supabase
+        .from('chat_requests')
+        .update({ status })
+        .eq('id', requestId);
 
-    const sendMessage = async (event : FormEvent) => {
-      event.preventDefault();
-    
-      const userMessage = { text: input, user: 'You' };
-    
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4',
-          messages: [
-          {
-              role: "system",
-              content: "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible."
-          },
-          {
-              role: "user",
-              content: `${messages.map((message) => message.text).join('\n')}\n${input}\n`
-          }
-          ],
-          max_tokens: 200,
-          n: 1,
-          stop: null,
-          temperature: 0,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
-          },
+    if (updateError) {
+        console.error('Error updating chat request:', updateError)
+        return;
+    }
+
+    // If the request was accepted, create a new chat message
+    if (status === 'accepted') {
+        const { error: insertError } = await supabase
+            .from('chat_messages')
+            .insert([
+                { sender_id: chatRequest.sender_id, receiver_id: chatRequest.receiver_id, message: 'Chat started' },
+            ]);
+
+        if (insertError) {
+            console.error('Error starting chat:', insertError);
+            return;
         }
-      );
-        
-      const botMessage = { text: response.data.choices[0].message.content, user: 'Bot' };
-    
-      setMessages([...messages, userMessage, botMessage]);
-      setInput('');
-    };
+    }
+
+    // Refresh chat requests and chat messages
+    fetchChatRequests();
+    fetchChatMessages();
+}
+
+  const sendMessage = async (event : FormEvent) => {
+    event.preventDefault();
+  
+    const userMessage = { text: chatInput, user: 'You' };  // Use chatInput here
+  
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4',
+        messages: [
+          {
+            role: "system",
+            content: "You are to chat with the user, learn more about their interests, and learn more about them. You should initialize the questions, as the user often might not know what to say. Don't put them in that situation. Keep the conversation casual and be efficient with your words. We want to know as much about the user in as little time as possible."
+          },
+          {
+            role: "user",
+            content: `${messages.map((message) => message.text).join('\n')}\n${chatInput}\n` // Use chatInput here
+          }
+        ],
+        max_tokens: 200,
+        n: 1,
+        stop: null,
+        temperature: 0,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ` + process.env.NEXT_PUBLIC_API_KEY,
+        },
+      }
+    );
+      
+    const botMessage = { text: response.data.choices[0].message.content, user: 'Bot' };
+  
+    setMessages([...messages, userMessage, botMessage]);
+    setChatInput('');  // Reset chatInput instead of input
+  };
 
     const submitChat = async () => {
       const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -294,6 +329,7 @@ type Message = {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message"
+              style={{color: 'black'}}
             />
             <button type="submit">Send</button>
           </form>
@@ -303,11 +339,17 @@ type Message = {
         <br></br>
         <br></br>
         <label>CHATGPT</label>
+        <div style={{color: 'white'}}>
+          {messages.map((message, index) => (
+            <p key={index}><strong>{message.user}:</strong> {message.text}</p>
+          ))}
+        </div>
         <form onSubmit={sendMessage}>
           <input
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Type a message"
+            style={{color: 'black'}}
           />
           <button type="submit">Send</button>
         </form>

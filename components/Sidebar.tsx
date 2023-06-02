@@ -8,7 +8,7 @@ const Sidebar = () => {
       <ul className={styles.sidebarList}>
         <li className={styles.sidebarLink}><Link href="/home">Home</Link></li>
         <li className={styles.sidebarLink}><Link href="/posts">Post</Link></li>
-        <li className={styles.sidebarLink}><Link href="/chatbot">Messages</Link></li>
+        <li className={styles.sidebarLink}><Link href="/messages">Messages</Link></li>
         <li className={styles.sidebarLink}><Link href="/">Settings</Link></li>
       </ul>
     </div>
