@@ -1,7 +1,7 @@
 // Post.tsx
 import React, { useState, useEffect } from 'react'
 import { User } from '@supabase/auth-helpers-nextjs'
-import { supabase } from '../pages/supabaseClient.js'
+import { supabase } from '../utils/supabaseClient.js'
 import styles from '../styles/App.module.css';
 import postStyles from '../styles/Post.module.css'
 import Link from 'next/link'

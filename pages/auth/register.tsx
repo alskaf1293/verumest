@@ -10,20 +10,9 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [location, setLocation] = useState('')
+  const [name, setName] = useState('')
 
   const [errorMsg, setErrorMsg] = useState('')
-
-  const onEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value)
-  }
-
-  const onPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value)
-  }
-
-  const onLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocation(e.target.value)
-  }
 
   const signupHandler = async () => {
     console.log('signing up with - email:', email, '| password:', password)
@@ -38,6 +27,7 @@ export default function Login() {
         .from('user_profiles')
         .insert([{
           user_id: data.user!.id,
+          name: name,
           location: location,
           created_at: new Date().toISOString() // current time in ISO format
         }])
@@ -64,21 +54,28 @@ export default function Login() {
           <input
             type='email'
             value={email}
-            onChange={onEmailChange}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder='email'
             className='border-2 p-4'
           />
           <input
             type='password'
             value={password}
-            onChange={onPasswordChange}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder='password'
             className='border-2 p-4'
           />
           <input
             type='text'
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder='name'
+            className='border-2 p-4'
+          />
+          <input
+            type='text'
             value={location}
-            onChange={onLocationChange}
+            onChange={(e) => setLocation(e.target.value)}
             placeholder='location'
             className='border-2 p-4'
           />

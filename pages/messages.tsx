@@ -3,7 +3,7 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { createServerSupabaseClient, User } from '@supabase/auth-helpers-nextjs'
 import { createClient } from '@supabase/supabase-js';
-import { supabase } from './supabaseClient'
+import { supabase } from '../utils/supabaseClient'
 import Application from '@/components/Application';
 import HomeFeed from '@/components/HomeFeed';
 import RightSidebar from '@/components/RightSidebar';
@@ -230,15 +230,7 @@ type Message = {
           }
       );
 
-      //split chat History using python server
-      //console.log(sentencesResponse.data.choices[0].message.content)
-      //const res = await axios.post(
-      //  'http://localhost:5000/split_sentences',
-      //  {
-      //    text: sentencesResponse.data.choices[0].message.content
-      //  }
-      //);
-      //const sentences = res.data;
+
   
       const bruh = sentencesResponse.data.choices[0].message.content;
       const sentences = bruh.split('\n');
@@ -284,7 +276,20 @@ type Message = {
     <Application>
       <Sidebar/>
       <HomeFeed>
-
+        <h2>Chat Requests</h2>
+        {chatRequests.map((request) => (
+          request.status !== 'accepted' && (
+            <div key={request.id}>
+              <p>
+                <strong>{request.sender_id}: </strong> {request.message}
+              </p>
+              <button onClick={() => handleChatRequest(request.id, 'accepted')}>Accept</button>
+              <button onClick={() => handleChatRequest(request.id, 'rejected')}>Reject</button>
+            </div>
+          )
+        ))}
+        <br></br>
+        <br></br>
         {/* Display chat partners on the side */}
         <div style={{ display: 'flex' }}>
             <div style={{ marginRight: '20px' }}>
