@@ -16,6 +16,8 @@ type Message = {
     id: string;
     sender_id: string;
     receiver_id: string;
+    sender_name: string;
+    receiver_name: string;
     message: string;
     status: string;
   };
@@ -24,10 +26,12 @@ type Message = {
     id: string;
     sender_id: string;
     receiver_id: string;
+    sender_name: string;
+    receiver_name: string;
     message: string;
   };
   
-  export default function Chat({ user, initialPosts }: { user: User, initialPosts: any[] }) {
+  export default function Chat({ user}: { user: User}) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [chatInput, setChatInput] = useState('');
@@ -71,16 +75,27 @@ type Message = {
       alert('You cannot send a message until your chat request is accepted.');
       return;
     }
-  
-    const { error } = await supabase
-      .from('chat_messages')
-      .insert([
-        { sender_id: user.id, receiver_id: selectedChatPartner, message: input },
-      ])
-  
-    if (error) {
-      console.error('Error sending message:', error)
-      return
+    const isSender = chatRequest.sender_id == user.id
+    if(isSender){
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert([
+          { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.sender_name, receiver_name: chatRequest.receiver_name, message: input },
+        ])
+        if (error) {
+          console.error('Error sending message:', error)
+          return
+        }
+    } else{
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert([
+          { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.receiver_name, receiver_name: chatRequest.sender_name, message: input },
+        ])
+        if (error) {
+          console.error('Error sending message:', error)
+          return
+        }
     }
   
     // Refresh chat messages
@@ -229,12 +244,9 @@ type Message = {
               },
           }
       );
-
-
   
       const bruh = sentencesResponse.data.choices[0].message.content;
       const sentences = bruh.split('\n');
-      
       
       for (const sentence of sentences) {
           const response = await axios.post(
@@ -315,7 +327,7 @@ type Message = {
                 .map((message) => (
                     <div key={message.id} style={{ backgroundColor: message.sender_id === user.id ? 'lightblue' : 'lightgreen' }}>
                     <p>
-                        <strong>{message.sender_id}: </strong> {message.message}
+                        <strong>{message.sender_name}: </strong> {message.message}
                     </p>
                     </div>
                 ))}
@@ -375,19 +387,10 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
       },
     }
 
-  // Fetch user's posts
-  const { data: posts, error } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('user_id', session.user.id)
-
-  if (error) console.log("Error fetching posts:", error)
-
   return {
     props: {
       initialSession: session,
       user: session.user,
-      initialPosts: posts,
     },
   }
 }

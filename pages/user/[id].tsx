@@ -11,6 +11,7 @@ type UserProfileProps = {
   created_at: string;
   user_id: string;
   location: string;
+  name: string;
   first_visit: boolean;
 };
 
@@ -35,14 +36,21 @@ export default function UserProfile({ initialUser, initialProfile }: Props) {
     const { data, error } = await supabase
       .from('chat_requests')
       .insert([
-        { sender_id: currentUser!.user_id, receiver_id: user!.user_id, message : message, status: 'pending' },
+        { 
+          sender_id: currentUser!.user_id, 
+          receiver_id: user!.user_id, 
+          sender_name: currentUser!.name, // Assumes that you have first_name and last_name fields in your UserProfileProps type
+          receiver_name: user!.name, // Same as above
+          message : message, 
+          status: 'pending' 
+        },
       ])
-
+  
     if (error) {
       console.error('Error sending chat request:', error)
       return
     }
-
+  
     // Clear the message input after sending the request
     setMessage('')
   }
