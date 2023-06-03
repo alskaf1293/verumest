@@ -30,7 +30,9 @@ type Message = {
     receiver_name: string;
     message: string;
   };
-  
+
+
+
   export default function Chat({ user}: { user: User}) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -39,132 +41,139 @@ type Message = {
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [selectedChatPartner, setSelectedChatPartner] = useState('');
     const chatPartners = Array.from(new Set(chatMessages.map(msg => (msg.sender_id !== user.id ? msg.sender_id : msg.receiver_id))));
+    useEffect(() => {
+      fetchChatMessages();
+    }, [chatRequests])
+
+    function getNameById(id : any) {
+      const chatMessage = chatMessages.find(msg => msg.sender_id === id || msg.receiver_id === id);
+      if (chatMessage) {
+        return chatMessage.sender_id === id ? chatMessage.sender_name : chatMessage.receiver_name;
+      }
+      return id;
+    }
     
-  useEffect(() => {
-    fetchChatMessages();
-  }, [chatRequests])
-
-  const fetchChatMessages = async () => {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .order('created_at', { ascending: true }) // Order by creation time
-
-    if (error) {
-      console.error('Error fetching chat messages:', error)
-      return
-    }
-
-    setChatMessages(data as ChatMessage[]);
-  }
-
-  const sendChatMessage = async (event : FormEvent) => {
-    event.preventDefault();
-  
-    // Check if there is an accepted chat request with the current user
-    const chatRequest = chatRequests.find(request => 
-      request.status === 'accepted' && 
-      ((request.sender_id === user.id && request.receiver_id === selectedChatPartner) || 
-       (request.receiver_id === user.id && request.sender_id === selectedChatPartner)));
-
-    console.log("selectedChatPartner: ", selectedChatPartner);
-    console.log("chatRequests: ", chatRequests);
-    console.log("chatRequest: ", chatRequest);
-    if (!chatRequest) {
-      alert('You cannot send a message until your chat request is accepted.');
-      return;
-    }
-    const isSender = chatRequest.sender_id == user.id
-    if(isSender){
-      const { error } = await supabase
+    const fetchChatMessages = async () => {
+      const { data, error } = await supabase
         .from('chat_messages')
-        .insert([
-          { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.sender_name, receiver_name: chatRequest.receiver_name, message: input },
-        ])
-        if (error) {
-          console.error('Error sending message:', error)
-          return
-        }
-    } else{
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert([
-          { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.receiver_name, receiver_name: chatRequest.sender_name, message: input },
-        ])
-        if (error) {
-          console.error('Error sending message:', error)
-          return
-        }
+        .select('*')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: true }) // Order by creation time
+
+      if (error) {
+        console.error('Error fetching chat messages:', error)
+        return
+      }
+      console.log(data)
+      setChatMessages(data as ChatMessage[]);
     }
-  
-    // Refresh chat messages
-    fetchChatMessages();
-  
-    setInput('');
-  }
 
+    const sendChatMessage = async (event : FormEvent) => {
+      event.preventDefault();
+    
+      // Check if there is an accepted chat request with the current user
+      const chatRequest = chatRequests.find(request => 
+        request.status === 'accepted' && 
+        ((request.sender_id === user.id && request.receiver_id === selectedChatPartner) || 
+        (request.receiver_id === user.id && request.sender_id === selectedChatPartner)));
 
-  useEffect(() => {
-    fetchChatRequests();
-  }, []);
-
-  const fetchChatRequests = async () => {
-    const { data, error } = await supabase
-      .from('chat_requests')
-      .select('*')
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-  
-    if (error) {
-      console.error('Error fetching chat requests:', error)
-      return
+      console.log("selectedChatPartner: ", selectedChatPartner);
+      console.log("chatRequests: ", chatRequests);
+      console.log("chatRequest: ", chatRequest);
+      if (!chatRequest) {
+        alert('You cannot send a message until your chat request is accepted.');
+        return;
+      }
+      const isSender = chatRequest.sender_id == user.id
+      if(isSender){
+        const { error } = await supabase
+          .from('chat_messages')
+          .insert([
+            { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.sender_name, receiver_name: chatRequest.receiver_name, message: input },
+          ])
+          if (error) {
+            console.error('Error sending message:', error)
+            return
+          }
+      } else{
+        const { error } = await supabase
+          .from('chat_messages')
+          .insert([
+            { sender_id: user.id, receiver_id: selectedChatPartner, sender_name: chatRequest.receiver_name, receiver_name: chatRequest.sender_name, message: input },
+          ])
+          if (error) {
+            console.error('Error sending message:', error)
+            return
+          }
+      }
+    
+      // Refresh chat messages
+      fetchChatMessages();
+    
+      setInput('');
     }
-  
-    setChatRequests(data as ChatRequest[]);
-  }
 
-  const handleChatRequest = async (requestId: string, status: string) => {
-    // Fetch the chat request that needs to be updated
-    const { data: chatRequest, error: fetchError } = await supabase
+
+    useEffect(() => {
+      fetchChatRequests();
+    }, []);
+
+    const fetchChatRequests = async () => {
+      const { data, error } = await supabase
         .from('chat_requests')
         .select('*')
-        .eq('id', requestId)
-        .single();
-
-    if (fetchError || !chatRequest) {
-        console.error('Error fetching chat request:', fetchError)
-        return;
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+    
+      if (error) {
+        console.error('Error fetching chat requests:', error)
+        return
+      }
+    
+      setChatRequests(data as ChatRequest[]);
     }
 
-    // Update the chat request status
-    const { error: updateError } = await supabase
-        .from('chat_requests')
-        .update({ status })
-        .eq('id', requestId);
+    const handleChatRequest = async (requestId: string, status: string) => {
+      // Fetch the chat request that needs to be updated
+      const { data: chatRequest, error: fetchError } = await supabase
+          .from('chat_requests')
+          .select('*')
+          .eq('id', requestId)
+          .single();
 
-    if (updateError) {
-        console.error('Error updating chat request:', updateError)
-        return;
-    }
+      if (fetchError || !chatRequest) {
+          console.error('Error fetching chat request:', fetchError)
+          return;
+      }
 
-    // If the request was accepted, create a new chat message
-    if (status === 'accepted') {
-        const { error: insertError } = await supabase
-            .from('chat_messages')
-            .insert([
-                { sender_id: chatRequest.sender_id, receiver_id: chatRequest.receiver_id, message: 'Chat started' },
-            ]);
+      // Update the chat request status
+      const { error: updateError } = await supabase
+          .from('chat_requests')
+          .update({ status })
+          .eq('id', requestId);
 
-        if (insertError) {
-            console.error('Error starting chat:', insertError);
-            return;
-        }
-    }
+      if (updateError) {
+          console.error('Error updating chat request:', updateError)
+          return;
+      }
 
-    // Refresh chat requests and chat messages
-    fetchChatRequests();
-    fetchChatMessages();
-}
+      // If the request was accepted, create a new chat message
+      if (status === 'accepted') {
+          const { error: insertError } = await supabase
+              .from('chat_messages')
+              .insert([
+                  { sender_id: chatRequest.sender_id, receiver_id: chatRequest.receiver_id, message: 'Chat started' },
+              ]);
+
+          if (insertError) {
+              console.error('Error starting chat:', insertError);
+              return;
+          }
+      }
+
+      // Refresh chat requests and chat messages
+      fetchChatRequests();
+      fetchChatMessages();
+  }
 
   const sendMessage = async (event : FormEvent) => {
     event.preventDefault();
@@ -306,13 +315,13 @@ type Message = {
         <div style={{ display: 'flex' }}>
             <div style={{ marginRight: '20px' }}>
                 {chatPartners.map((partner) => (
-                    <button 
-                        key={partner}
-                        style={partner === selectedChatPartner ? { backgroundColor: 'lightblue' } : undefined}
-                        onClick={() => setSelectedChatPartner(partner)}
-                    >
-                        {partner}
-                    </button>
+                  <button 
+                    key={partner}
+                    style={partner === selectedChatPartner ? { backgroundColor: 'lightblue' } : undefined}
+                    onClick={() => setSelectedChatPartner(partner)}
+                  >
+                    {getNameById(partner)}
+                  </button>
                 ))}
             </div>
 
