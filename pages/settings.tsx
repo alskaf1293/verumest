@@ -42,6 +42,7 @@ export default function Settings({ user }: { user: User }) {
   return (
     <Application>
       <Sidebar />
+      <RightSidebar />
       <HomeFeed>
         {loading ? (
           <div>Loading...</div>

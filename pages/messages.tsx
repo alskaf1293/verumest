@@ -296,6 +296,7 @@ type Message = {
   return (
     <Application>
       <Sidebar/>
+      <RightSidebar />
       <HomeFeed>
         <h2>Chat Requests</h2>
         {chatRequests.map((request) => (

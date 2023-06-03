@@ -71,6 +71,7 @@ export default function Posts({ user, initialPosts, users }: { user: User, initi
     <>
       <Application>
         <Sidebar/>
+        <RightSidebar />
         <HomeFeed>
           <PostSubmission user={user} onNewPost={handleNewPost} />
           <YourPosts posts={posts} />

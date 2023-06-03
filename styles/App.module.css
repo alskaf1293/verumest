@@ -8,14 +8,20 @@
     font-family: 'Georgia';
     background-color: #000000;
     color: white;
+    min-height: 100%;
+    min-width: 100%
 }
 
 .sidebar {
-    position: relative;
-    width: 15%; /* add this */
+    position: fixed;
+    width: 20%; /* add this */
+    height: 100%;
+    top: 0px;
+    left: 0px;
     padding: 1em;
     color: white;
     font-family: 'Georgia';
+    justify-content: center;
 }
 
 .sidebar::after {
@@ -23,7 +29,7 @@
     position: absolute;
     top: 0;
     right: 0;
-    height: 50%;
+    height: 100%;
     width: 1px;  /* adjust width as needed */
     background: #333333;
 }
@@ -42,13 +48,16 @@
 }
 
 .sidebarList {
-
+    position: relative;
+    justify-content: center;
+    width: 70%;
+    left: 30%;
 }
 
 .homefeed {
     padding-left: 5%;
     padding-right: 5%;
-    width: 50%;
+    width: 60%;
     display: column;
 }
 

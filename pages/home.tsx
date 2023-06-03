@@ -35,6 +35,7 @@ export default function Home({ initialPosts, user }: { initialPosts: PostType[],
   return (
     <Application>
       <Sidebar /> {/* Add Sidebar component here */}
+      <RightSidebar />
       <HomeFeed>
         {posts.filter(Boolean).map((post) => (
           <Post key={post.id} post={post} user={user} />   // Add a key prop here
