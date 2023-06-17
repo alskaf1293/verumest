@@ -28,7 +28,6 @@ export default function Login() {
         .insert([{
           user_id: data.user!.id,
           name: name,
-          location: location,
           created_at: new Date().toISOString() // current time in ISO format
         }])
       console.log('results of profile creation: ', profileData, profileError)
@@ -70,13 +69,6 @@ export default function Login() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder='name'
-            className='border-2 p-4'
-          />
-          <input
-            type='text'
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder='location'
             className='border-2 p-4'
           />
           <button onClick={signupHandler} className='border-2 p-4'>

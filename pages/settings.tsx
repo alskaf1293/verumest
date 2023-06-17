@@ -104,7 +104,6 @@ export default function Settings({ user }: { user: User }) {
           <div>
             <h1>User Profile</h1>
             <p>User ID: {user.id}</p>
-            <p>Location: {location}</p>
             <label>
               Name:
               <input 
